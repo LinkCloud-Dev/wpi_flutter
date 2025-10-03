@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -17,25 +16,27 @@ class MethodChannelWpiFlutter extends WpiFlutterPlatform {
   }
 
   @override
-  Future<String?> processTransaction({required String requestJson, required String serviceType, required String sessionId, required String wpiVersion}) async {
+  Future<Map<String, dynamic>?> processTransaction({required String requestJson, required String serviceType, required String sessionId, required String wpiVersion}) async {
     final response = await methodChannel.invokeMethod('processTransaction', <String, dynamic>{
       'requestJson': requestJson,
       'serviceType': serviceType,
       'sessionId': sessionId,
       'wpiVersion': wpiVersion,
     });
-
-    return response != null ? jsonEncode(response) : null;
+    if (response == null) return null;
+    if (response is Map) return Map<String, dynamic>.from(response as Map);
+    throw PlatformException(code: 'BAD_RESPONSE', message: 'processTransaction returned non-map');
   }
 
   @override
-  Future<String?> processOperation({required String requestJson, required String serviceType, bool showOverlay = false}) async {
+  Future<Map<String, dynamic>?> processOperation({required String requestJson, required String serviceType, bool showOverlay = false}) async {
     final response = await methodChannel.invokeMethod('processOperation', <String, dynamic>{
       'requestJson': requestJson,
       'serviceType': serviceType,
       'showOverlay': showOverlay,
     });
-
-    return response != null ? jsonEncode(response) : null;
+    if (response == null) return null;
+    if (response is Map) return Map<String, dynamic>.from(response as Map);
+    throw PlatformException(code: 'BAD_RESPONSE', message: 'processOperation returned non-map');
   }
 }

@@ -55,6 +55,7 @@ class WpiFlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, PluginR
         println("=========================")
 
         val intent = Intent("com.worldline.payment.action.PROCESS_TRANSACTION").apply {
+          flags += Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
           putExtra("WPI_SERVICE_TYPE", serviceType)
           putExtra("WPI_REQUEST", requestJson)
           putExtra("WPI_VERSION", wpiVersion)
@@ -83,7 +84,7 @@ class WpiFlutterPlugin: FlutterPlugin, MethodCallHandler, ActivityAware, PluginR
       "processOperation" -> {
         val serviceType = call.argument<String>("serviceType")
         val requestJson = call.argument<String>("requestJson")
-        val showOverlay = call.argument<Boolean>("showOverlay") 
+        val showOverlay = call.argument<Boolean>("showOverlay") ?: true
 
         println("=== WMI Request Debug ===")
         println("Intent Action: com.worldline.management.action.PROCESS_OPERATION")

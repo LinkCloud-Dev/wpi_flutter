@@ -1,4 +1,12 @@
 
+library wpi_flutter;
+
+export 'wpi_model.dart';
+
+import 'dart:convert';
+
+import 'package:wpi_flutter/wpi_model.dart';
+
 import 'wpi_flutter_platform_interface.dart';
 
 /// WPI Flutter Plugin
@@ -20,7 +28,7 @@ class WpiFlutter {
   /// [showOverlay] - Whether to show overlay during processing (default: true)
   ///
   /// Returns the WMI response as JSON string, or null if failed
-  Future<String?> _processOperation({
+  Future<Map<String, dynamic>?> _processOperation({
     required String requestJson,
     required String serviceType,
     bool showOverlay = true,
@@ -38,7 +46,7 @@ class WpiFlutter {
   /// [serviceType] - WPI service type (WPI_SVC_PAYMENT, WPI_SVC_CANCEL_PAYMENT, etc.)
   /// [sessionId] - Unique session identifier for the transaction
   /// [wpiVersion] - WPI version to use (default: v2.2)
-  Future<String?> _processTransaction({
+  Future<Map<String, dynamic>?> _processTransaction({
     required String requestJson,
     required String serviceType,
     required String sessionId,
@@ -60,15 +68,15 @@ class WpiFlutter {
   /// [sessionId] - Unique session identifier for the transaction
   /// 
   /// Returns the WPI response as JSON string, or null if failed
-  Future<String?> processPayment({
+  Future<WpiResponse?> processPayment({
     required String requestJson,
     required String sessionId,
-  }) {
-    return _processTransaction(
-      requestJson: requestJson,
-      serviceType: "WPI_SVC_PAYMENT",
-      sessionId: sessionId,
-    );
+  }) async {
+    final map = await _processTransaction(
+        requestJson: requestJson,
+        serviceType: "WPI_SVC_PAYMENT",
+        sessionId: sessionId);
+    return WpiResponse.fromChannelMap(map);
   }
 
   /// Cancel or reverse a transaction
@@ -80,15 +88,15 @@ class WpiFlutter {
   /// [sessionId] - Unique session identifier for the transaction
   /// 
   /// Returns the WPI response as JSON string, or null if failed
-  Future<String?> cancelPayment({
+  Future<WpiResponse?> cancelPayment({
     required String requestJson,
     required String sessionId,
-  }) {
-    return _processTransaction(
-      requestJson: requestJson,
-      serviceType: "WPI_SVC_CANCEL_PAYMENT",
-      sessionId: sessionId,
-    );
+  }) async {
+    final map = await _processTransaction(
+        requestJson: requestJson,
+        serviceType: "WPI_SVC_CANCEL_PAYMENT",
+        sessionId: sessionId);
+    return WpiResponse.fromChannelMap(map);
   }
 
   /// Process a refund transaction
@@ -100,15 +108,15 @@ class WpiFlutter {
   /// [sessionId] - Unique session identifier for the transaction
   /// 
   /// Returns the WPI response as JSON string, or null if failed
-  Future<String?> processRefund({
+  Future<WpiResponse?> processRefund({
     required String requestJson,
     required String sessionId,
-  }) {
-    return _processTransaction(
-      requestJson: requestJson,
-      serviceType: "WPI_SVC_REFUND",
-      sessionId: sessionId,
-    );
+  }) async {
+    final map = await _processTransaction(
+        requestJson: requestJson,
+        serviceType: "WPI_SVC_REFUND",
+        sessionId: sessionId);
+    return WpiResponse.fromChannelMap(map);
   }
 
   /// Check the status of the last transaction
@@ -119,14 +127,14 @@ class WpiFlutter {
   /// [sessionId] - Session ID of the transaction to check
   ///
   /// Returns the WPI response containing the last transaction status, or null if failed
-  Future<String?> checkLastTransaction({
+  Future<WpiResponse?> checkLastTransaction({
     required String sessionId,
-  }) {
-    return _processTransaction(
-      requestJson: "{}", // Empty JSON for last transaction check
-      serviceType: "WPI_SVC_LAST_TRANSACTION",
-      sessionId: sessionId,
-    );
+  }) async {
+    final map = await _processTransaction(
+        requestJson: "{}",
+        serviceType: "WPI_SVC_LAST_TRANSACTION",
+        sessionId: sessionId);
+    return WpiResponse.fromChannelMap(map);
   }
 
   /// Check application status
@@ -137,10 +145,30 @@ class WpiFlutter {
   ///
   ///
   /// Returns the WMI response containing the application status, or null if failed
-  Future<String?> checkApplicationStatus() {
-    return _processOperation(
-      requestJson: "{}", // No parameters required for status check
-      serviceType: "WMI_SVC_CHECK_STATUS",
+  Future<WmiResponse?> checkApplicationStatus() async {
+    final map = await _processOperation(
+        requestJson: "{}",
+        serviceType: "WMI_SVC_CHECK_STATUS"
     );
+    return WmiResponse.fromChannelMap(map);
+  }
+
+  Future<WmiResponse?> registerTerminal({
+    required String? registrationToken,
+  }) async {
+    final req = registrationToken == null ? {} : {"registrationToken": registrationToken};
+    final map = await _processOperation(
+        requestJson: jsonEncode(req),
+        serviceType: "WMI_SVC_REGISTER"
+    );
+    return WmiResponse.fromChannelMap(map);
+  }
+
+  Future<WmiResponse?> unregisterTerminal() async {
+    final map = await _processOperation(
+        requestJson: "{}",
+        serviceType: "WMI_SVC_AUTH_UNREGISTER"
+    );
+    return WmiResponse.fromChannelMap(map);
   }
 }

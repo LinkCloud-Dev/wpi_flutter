@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:wpi_flutter/wpi_flutter.dart';
+import 'package:wpi_flutter/wpi_model.dart';
 
 void main() {
   runApp(const MyApp());
@@ -22,6 +23,8 @@ class _MyAppState extends State<MyApp> {
   
   // Store last transaction session ID for reversal and refund operations
   String? _lastTransactionSessionId;
+  WpiResponse? _lastPaymentResponse;
+  String? _lastPSR;
 
   @override
   void initState() {
@@ -65,14 +68,20 @@ class _MyAppState extends State<MyApp> {
 
   String _buildReversalRequest() {
     final request = {
-      // TODO: Implement reversal request fields
+      'paymentSolutionReference': 'PaymentSolRef-013543-22234-kjhj3ll3jJHGGSk', // PSR for the specific purchase
+      'reference': 'TXN-${DateTime.now().millisecondsSinceEpoch}', // Transaction reference
+      'receiptFormat': 'FORMATTED',         // Receipt format
     };
     return jsonEncode(request);
   }
 
   String _buildRefundRequest() {
     final request = {
-      // TODO: Implement refund request fields
+      'currency': 'AUD',                    // Currency code (ISO 4217)
+      'requestedAmount': 500,              // 10.22AUD = 1022 cents (minor currency unit)
+      'paymentSolutionReference': 'PaymentSolRef-013543-22234-kjhj3ll3jJHGGSk', // PSR for the specific purchase
+      'reference': 'TXN-${DateTime.now().millisecondsSinceEpoch}', // Transaction reference
+      'receiptFormat': 'FORMATTED',         // Receipt format
     };
     return jsonEncode(request);
   }
@@ -83,14 +92,14 @@ class _MyAppState extends State<MyApp> {
   Future<void> purchase() async {
     try {
       final sessionId = 'session-${DateTime.now().millisecondsSinceEpoch}';
-      
       final response = await _wpiFlutterPlugin.processPayment(
         requestJson: _buildPurchaseRequest(),
         sessionId: sessionId,
       );
-      
       _lastTransactionSessionId = sessionId;
-      print('Purchase Response: $response');
+      _lastPaymentResponse = response;
+      _lastPSR = response?.paymentSolutionReference;
+      print('Purchase Result: ${response?.result}, psr = $_lastPSR, amount = ${response?.authorizedAmount}');
     } catch (e) {
       print('Purchase failed: $e');
     }
@@ -99,15 +108,13 @@ class _MyAppState extends State<MyApp> {
   Future<void> reversal() async {
     try {
       final sessionId = 'session-${DateTime.now().millisecondsSinceEpoch}';
-      
       final response = await _wpiFlutterPlugin.cancelPayment(
         requestJson: _buildReversalRequest(),
         sessionId: sessionId,
       );
-      
       // Store this session ID for future operations
       _lastTransactionSessionId = sessionId;
-      print('Reversal Response: $response');
+      print('Reversal Result: ${response?.result}, error: ${response?.errorCondition}');
     } catch (e) {
       print('Reversal failed: $e');
     }
@@ -124,7 +131,7 @@ class _MyAppState extends State<MyApp> {
       
       // Store this session ID for future operations
       _lastTransactionSessionId = sessionId;
-      print('Refund Response: $response');
+      print('Refund Result: ${response?.result}, error: ${response?.errorCondition}');
     } catch (e) {
       print('Refund failed: $e');
     }
@@ -141,7 +148,7 @@ class _MyAppState extends State<MyApp> {
       final response = await _wpiFlutterPlugin.checkLastTransaction(
         sessionId: _lastTransactionSessionId!,
       );
-      print('Last Transaction Status: $response');
+      print('Last Transaction Status: ${response?.result}, Last psr: ${response?.paymentSolutionReference}');
     } catch (e) {
       print('Check Last Transaction failed: $e');
     }
@@ -151,12 +158,29 @@ class _MyAppState extends State<MyApp> {
   Future<void> checkApplicationStatus() async {
     try {
       final response = await _wpiFlutterPlugin.checkApplicationStatus();
-      print('Application Status: $response');
+      print('AppStatus=${response?.appStatus}, result=${response?.result}, error=${response?.errorCondition}');
     } catch (e) {
       print('Check Application Status failed: $e');
     }
   }
 
+  Future<void> registerTerminal() async {
+    try {
+      final response = await _wpiFlutterPlugin.registerTerminal(registrationToken: '');
+      print('Application Status: $response');
+    } catch (e) {
+      print('Register Terminal failed: $e');
+    }
+  }
+
+  Future<void> unregisterTerminal() async {
+    try {
+      final response = await _wpiFlutterPlugin.unregisterTerminal();
+      print('Application Status: $response');
+    } catch (e) {
+      print('Unregister Terminal failed: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -241,6 +265,20 @@ class _MyAppState extends State<MyApp> {
                             child: ElevatedButton(
                               onPressed: checkApplicationStatus,
                               child: const Text('Check App Status'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: registerTerminal,
+                              child: const Text('Check Register terminal'),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: unregisterTerminal,
+                              child: const Text('Check Unregister terminal'),
                             ),
                           ),
                         ],

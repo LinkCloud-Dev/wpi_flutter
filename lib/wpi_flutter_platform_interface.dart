@@ -27,7 +27,7 @@ abstract class WpiFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('platformVersion() has not been implemented.');
   }
 
-  Future<String?> processTransaction({
+  Future<Map<String, dynamic>?> processTransaction({
     required String requestJson,
     required String serviceType,
     required String sessionId,
@@ -36,7 +36,7 @@ abstract class WpiFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('processTransaction() has not been implemented.');
   }
 
-  Future<String?> processOperation({
+  Future<Map<String, dynamic>?> processOperation({
     required String requestJson,
     required String serviceType,
     required bool showOverlay,
